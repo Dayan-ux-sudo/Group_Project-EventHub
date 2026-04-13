@@ -1,0 +1,53 @@
+.filter-container{
+    display: flex;
+    gap: 12px;
+    padding: 20px;
+    background-color: #101322;
+    overflow-x: auto;
+}
+.pill-button{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 20px;
+    height: 40px;
+    width: 12%;
+    border-radius: 999px;
+    border: 1px solid #334155;
+    background-color: #1e293b;
+    color: #94a3b8;
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+/*hover effect for inactive button*/
+.pill-button:hover{
+    background-color: #334155;
+    color: #f8fafc;
+}
+/*Active/Selected state*/
+.pill-button.active{
+    background-color: #0084ff;
+    color: #ffffff;
+    border-color: #0084ff;
+}
+
+/*Spacing on the icon*/
+.button-icon{
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+}
+
+@media (max-width: 800px) {
+    .filter-container{
+        width: 100%;
+    }
+    .pill-button { 
+        font-size: 14px;
+        width: 14%;
+    }
+    
+}

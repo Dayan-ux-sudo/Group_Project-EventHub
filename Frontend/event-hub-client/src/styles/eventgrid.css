@@ -1,0 +1,108 @@
+/* Styling Variables for easy changes */
+:root {
+  --card-bg: #1e293b;
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --accent-blue: #3b82f6;
+  --border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 1. Grid Layout Container */
+.event-grid {
+  display: grid;
+  /* Automatically creates columns that are at least 300px wide */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+  padding: 20px 0;
+}
+
+/* 2. Individual Card Container */
+.event-card {
+  background-color: var(--card-bg);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hover Effect: Slight lift and glow */
+.event-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* 3. Image Section */
+.card-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  /* Prevents image distortion */
+  display: block;
+}
+
+/* 4. Content Area */
+.card-body {
+  padding: 24px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Category Tag & Date */
+.event-tag {
+  color: var(--accent-blue);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* Event Title */
+.event-card h3 {
+  color: var(--text-main);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+}
+
+/* Location Text */
+.event-card p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: auto 0 0 0;
+  /* Pushes location to the bottom */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 5. Empty State (When no results found) */
+.no-results {
+  grid-column: 1 / -1;
+  /* Spans across all columns */
+  text-align: center;
+  padding: 60px;
+  color: var(--text-muted);
+  font-style: italic;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  border: 1px dashed var(--border-color);
+}
+
+/* Responsive Adjustments for Mobile */
+@media (max-width: 640px) {
+  .event-grid {
+    grid-template-columns: 1fr;
+    /* Single column on small phones */
+    gap: 16px;
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+}

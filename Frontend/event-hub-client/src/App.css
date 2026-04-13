@@ -1,0 +1,56 @@
+/* Lexend font import */
+@import url("https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap");
+
+* {
+  box-sizing: border-box;
+}
+ 
+body {
+  margin: 0;
+  background: #042beb;
+  font-family: "Lexend", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+ 
+/* Remove scrollbar in filter row */
+.overflow-auto::-webkit-scrollbar {
+  display: none;
+}
+ 
+/* Bootstrap form control dark overrides */
+.form-control,
+.form-select {
+  color: #f1f5f9 !important;
+}
+ 
+.form-control::placeholder {
+  color: #64748b !important;
+}
+ 
+.form-control:focus,
+.form-select:focus {
+  background-color: #1e2235 !important;
+  border-color: #1337ec !important;
+  box-shadow: 0 0 0 3px rgba(19, 55, 236, 0.2) !important;
+  color: #f1f5f9 !important;
+}
+ 
+.form-select option {
+  background: #1e2235;
+  color: #f1f5f9;
+}
+ 
+/* Navbar toggler fix */
+.navbar-toggler:focus {
+  box-shadow: none;
+}
+ 
+/* Breadcrumb separator color */
+.breadcrumb-item + .breadcrumb-item::before {
+  color: #475569;
+}
+ 
+/* Object fit cover utility */
+.object-fit-cover {
+  object-fit: cover;
+}
