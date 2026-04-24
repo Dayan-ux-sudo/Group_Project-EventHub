@@ -7,9 +7,12 @@ export const Route = createFileRoute('/Forgotpassword')({
 
 const STEP = {
   EMAIL: "email",
-  SENT: "sent",
+  CODE: "code",
   RESET: "reset",
 };
+
+// API Base URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 // ─── Global styles (injected once via <style>) ────────────────────────────────
 const globalStyles = `
@@ -215,7 +218,9 @@ function ForgotPasswordPage() {
 
   const [step, setStep]             = useState(STEP.EMAIL);
   const [email, setEmail]           = useState("");
+  const [code, setCode]             = useState("");
   const [emailError, setEmailError] = useState("");
+  const [codeError, setCodeError]   = useState("");
   const [loading, setLoading]       = useState(false);
 
   const [passwords, setPasswords]       = useState({ password: "", confirm: "" });
@@ -226,23 +231,113 @@ function ForgotPasswordPage() {
 
   const goToLogin = () => navigate({ to: "/login" });
 
-  // Step 1
-  const handleEmailSubmit = (e) => {
+  // Step 1: Send email to backend
+  const handleEmailSubmit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) { setEmailError("Please enter your email address."); return; }
+    if (!email.trim()) { 
+      setEmailError("Please enter your email address."); 
+      return; 
+    }
+    
     setEmailError("");
     setLoading(true);
-    setTimeout(() => { setLoading(false); setStep(STEP.SENT); }, 1400);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        console.log("Reset code sent to email:", data);
+        setStep(STEP.CODE);
+      } else {
+        setEmailError(data.email?.[0] || data.detail || "Failed to send reset code");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setEmailError("Failed to send reset code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Step 3
-  const handleResetSubmit = (e) => {
+  // Step 2: Verify code
+  const handleCodeSubmit = async (e) => {
     e.preventDefault();
-    if (passwords.password.length < 8) { setResetError("Password must be at least 8 characters."); return; }
-    if (passwords.password !== passwords.confirm) { setResetError("Passwords don't match."); return; }
+    if (!code.trim() || code.length !== 6) { 
+      setCodeError("Please enter a valid 6-digit code."); 
+      return; 
+    }
+    
+    setCodeError("");
+    setLoading(true);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-code/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setStep(STEP.RESET);
+      } else {
+        setCodeError(data.detail || data.non_field_errors?.[0] || "Invalid code");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setCodeError("Failed to verify code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 3: Reset password
+  const handleResetSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (passwords.password.length < 8) { 
+      setResetError("Password must be at least 8 characters."); 
+      return; 
+    }
+    if (passwords.password !== passwords.confirm) { 
+      setResetError("Passwords don't match."); 
+      return; 
+    }
+    
     setResetError("");
     setLoading(true);
-    setTimeout(() => { setLoading(false); setResetDone(true); }, 1400);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email, 
+          code, 
+          password: passwords.password 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setResetDone(true);
+      } else {
+        setResetError(data.detail || data.password?.[0] || data.non_field_errors?.[0] || "Failed to reset password");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setResetError("Failed to reset password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ── STEP 1 — Enter email ────────────────────────────────────────────────────
@@ -254,7 +349,7 @@ function ForgotPasswordPage() {
             <CardIcon icon="bi-shield-lock-fill" />
             <h4 className="text-white fw-bold mb-1">Forgot your password?</h4>
             <p className="text-secondary mb-0" style={{ fontSize: "0.9rem" }}>
-              No worries — enter your email and we'll send a reset link.
+              Enter your email and we'll send you a reset code.
             </p>
           </div>
 
@@ -288,117 +383,91 @@ function ForgotPasswordPage() {
               </div>
             </div>
 
-            <PrimaryButton loading={loading} loadingText="Sending link...">
+            <PrimaryButton loading={loading} loadingText="Sending code...">
               <i className="bi bi-send-fill"></i>
-              Send Reset Link
+              Send Reset Code
             </PrimaryButton>
           </form>
 
           <BackToSignIn onClick={goToLogin} />
         </Card>
-
-        <div
-          className="rounded-3 p-3 mt-3 d-flex align-items-center gap-2"
-          style={{ background: "rgba(19,55,236,0.08)", border: "1px solid rgba(19,55,236,0.2)" }}
-        >
-          <i className="bi bi-info-circle-fill text-primary flex-shrink-0"></i>
-          <span className="text-secondary" style={{ fontSize: "0.8rem" }}>
-            Demo: any valid email will trigger the confirmation screen.
-          </span>
-        </div>
       </PageShell>
     );
   }
 
-  // ── STEP 2 — Email sent ─────────────────────────────────────────────────────
-  if (step === STEP.SENT) {
+  // ── STEP 2 — Enter reset code ─────────────────────────────────────────────────
+  if (step === STEP.CODE) {
     return (
       <PageShell>
         <Card>
-          <div className="text-center">
+          <div className="text-center mb-4">
             <div
-              className="mx-auto mb-4 rounded-3 d-flex align-items-center justify-content-center"
+              className="mx-auto mb-3 rounded-3 d-flex align-items-center justify-content-center"
               style={{
-                width: 64, height: 64,
-                background: "rgba(34,197,94,0.12)",
-                border: "1px solid rgba(34,197,94,0.25)",
+                width: 56, height: 56,
+                background: "rgba(19,55,236,0.15)",
               }}
             >
-              <i className="bi bi-envelope-check-fill fs-2" style={{ color: "#22c55e" }}></i>
+              <i className="bi bi-info-circle-fill text-primary fs-3"></i>
             </div>
-
-            <h4 className="text-white fw-bold mb-2">Check your inbox</h4>
-            <p className="text-secondary mb-1" style={{ fontSize: "0.92rem" }}>
-              We sent a password reset link to
+            <h4 className="text-white fw-bold mb-1">Check your email</h4>
+            <p className="text-secondary mb-0" style={{ fontSize: "0.9rem" }}>
+              We sent a 6-digit code to
             </p>
             <p className="fw-semibold mb-4" style={{ color: "#93c5fd", fontSize: "0.95rem", wordBreak: "break-all" }}>
               {email}
             </p>
+          </div>
 
-            <div
-              className="rounded-3 p-3 mb-4 text-start"
-              style={{ background: "#1a1f33", border: "1px solid #2a3050" }}
-            >
-              {[
-                { icon: "bi-1-circle", text: "Open the email from CampusEvents" },
-                { icon: "bi-2-circle", text: 'Click the "Reset password" button' },
-                { icon: "bi-3-circle", text: "Choose a strong new password" },
-              ].map(({ icon, text }) => (
-                <div key={icon} className="d-flex align-items-center gap-3 py-2">
-                  <i className={`bi ${icon} text-primary`} style={{ fontSize: "1.1rem", flexShrink: 0 }}></i>
-                  <span className="text-secondary" style={{ fontSize: "0.88rem" }}>{text}</span>
-                </div>
-              ))}
+          <ErrorBanner message={codeError} />
+
+          <form onSubmit={handleCodeSubmit} noValidate>
+            <div className="mb-4">
+              <label
+                className="form-label text-secondary fw-semibold"
+                style={{ fontSize: "0.82rem", letterSpacing: 0.5 }}
+              >
+                RESET CODE
+              </label>
+              <input
+                type="text"
+                className="form-control auth-input w-100 text-center"
+                placeholder="000000"
+                maxLength="6"
+                style={{ ...inputBase, fontSize: "1.8rem", letterSpacing: "0.4em", fontWeight: "bold" }}
+                value={code}
+                onChange={(e) => { setCode(e.target.value.replace(/\D/g, "")); setCodeError(""); }}
+                required
+                autoFocus
+              />
+              <small className="text-secondary d-block mt-2" style={{ fontSize: "0.75rem" }}>
+                Enter the 6-digit code from your email
+              </small>
             </div>
 
-            <p className="text-secondary mb-4" style={{ fontSize: "0.85rem" }}>
-              Didn't receive it?{" "}
-              <button
-                type="button"
-                className="fp-ghost-btn text-primary fw-semibold"
-                style={{ fontSize: "0.85rem" }}
-                onClick={() => setStep(STEP.EMAIL)}
-              >
-                Resend email
-              </button>
-              {" "}or{" "}
-              <button
-                type="button"
-                className="fp-ghost-btn text-primary fw-semibold"
-                style={{ fontSize: "0.85rem" }}
-                onClick={() => { setEmail(""); setStep(STEP.EMAIL); }}
-              >
-                try a different address
-              </button>
-            </p>
+            <PrimaryButton loading={loading} loadingText="Verifying...">
+              <i className="bi bi-check-circle"></i>
+              Verify Code
+            </PrimaryButton>
+          </form>
 
-            {/* Demo shortcut to simulate email link click */}
+          <p className="text-center mt-4 text-secondary" style={{ fontSize: "0.85rem" }}>
+            Didn't receive the code?{" "}
             <button
               type="button"
-              className="btn w-100 fw-semibold py-2 mb-4"
-              style={{
-                background: "rgba(19,55,236,0.15)",
-                border: "1px solid rgba(19,55,236,0.35)",
-                color: "#93c5fd",
-                borderRadius: 10,
-                fontSize: "0.88rem",
+              className="fp-ghost-btn text-primary fw-semibold"
+              style={{ fontSize: "0.85rem" }}
+              onClick={() => {
+                setStep(STEP.EMAIL);
+                setCode("");
+                setCodeError("");
               }}
-              onClick={() => setStep(STEP.RESET)}
             >
-              <i className="bi bi-box-arrow-in-right me-2"></i>
-              Demo: simulate clicking the reset link →
+              Try a different email
             </button>
+          </p>
 
-            <button
-              type="button"
-              className="fp-ghost-btn text-secondary d-inline-flex align-items-center gap-1"
-              style={{ fontSize: "0.88rem" }}
-              onClick={goToLogin}
-            >
-              <i className="bi bi-arrow-left"></i>
-              Back to Sign In
-            </button>
-          </div>
+          <BackToSignIn onClick={goToLogin} />
         </Card>
       </PageShell>
     );
@@ -423,7 +492,7 @@ function ForgotPasswordPage() {
             </div>
             <h4 className="text-white fw-bold mb-2">Password updated!</h4>
             <p className="text-secondary mb-4" style={{ fontSize: "0.9rem" }}>
-              Your password has been reset. You can now sign in with your new credentials.
+              Your password has been reset successfully. You can now sign in with your new credentials.
             </p>
             <PrimaryButton onClick={goToLogin}>
               <i className="bi bi-box-arrow-in-right"></i>
@@ -461,7 +530,7 @@ function ForgotPasswordPage() {
                   <input
                     type={showPw ? "text" : "password"}
                     className="form-control auth-input w-100"
-                    placeholder="At least 8 characters"
+                    placeholder="At least 8 characters with uppercase & number"
                     style={{ ...inputBase, paddingLeft: 42, paddingRight: 44 }}
                     value={passwords.password}
                     onChange={(e) => { setPasswords({ ...passwords, password: e.target.value }); setResetError(""); }}

@@ -1,12 +1,11 @@
 # docker-compose.yml
-version: '3.9'
 services:
   db:
-    image: postgres:16
+    image: postgres:18
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: Moche1234
       POSTGRES_DB: eventhub
     ports:
       - "5432:5432"
