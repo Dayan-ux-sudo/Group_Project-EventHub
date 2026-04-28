@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import Navbar from "../components/Navbar";
+
 import Footer from "../components/Footer";
-import { eventsAPI } from "../api";
+import Navbar from "../components/Navbar";
+import { eventsAPI, getStoredUser } from "../api";
 
 export const Route = createFileRoute("/HostPage")({
   component: HostPage,
@@ -19,308 +20,202 @@ const categoryOptions = [
 
 function HostPage() {
   const navigate = useNavigate();
+  const currentUser = getStoredUser();
+  const search = Route.useSearch();
+  const eventId =
+    typeof search.eventId === "string" || typeof search.eventId === "number"
+      ? String(search.eventId).trim()
+      : "";
+  const [schools, setSchools] = useState([]);
   const [form, setForm] = useState({
     title: "",
-    category: "",
+    category: "workshop",
     start_time: "",
     end_time: "",
     location: "",
-    capacity: "",
+    latitude: "",
+    longitude: "",
+    school: currentUser?.school?.code || "",
+    capacity: 120,
     description: "",
+    is_public: true,
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  useEffect(() => {
+    const fetchData = async () => {
+      const schoolsResponse = await eventsAPI.getSchools();
+      const schoolList = Array.isArray(schoolsResponse.data) ? schoolsResponse.data : schoolsResponse.data.results || [];
+      setSchools(schoolList);
+
+      if (eventId) {
+        const eventResponse = await eventsAPI.getEvent(eventId);
+        const event = eventResponse.data;
+        setForm({
+          title: event.title,
+          category: event.category,
+          start_time: event.start_time.slice(0, 16),
+          end_time: event.end_time.slice(0, 16),
+          location: event.location || "",
+          latitude: event.latitude || "",
+          longitude: event.longitude || "",
+          school: event.school?.code || "",
+          capacity: event.capacity,
+          description: event.description || "",
+          is_public: event.is_public,
+        });
+      }
+    };
+
+    fetchData();
+  }, [eventId]);
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const payload = {
+      ...form,
+      latitude: form.latitude === "" ? null : Number(form.latitude),
+      longitude: form.longitude === "" ? null : Number(form.longitude),
+      capacity: Number(form.capacity),
+    };
 
-    try {
-      const eventData = {
-        ...form,
-        capacity: form.capacity ? parseInt(form.capacity) : 100,
-        is_public: true,
-      };
-      await eventsAPI.createEvent(eventData);
-      setSubmitted(true);
-    } catch (err) {
-      setError("Failed to create event. Please try again.");
-      console.error(err);
-    } finally {
-      setLoading(false);
+    if (eventId) {
+      await eventsAPI.updateEvent(eventId, payload);
+      setMessage("Event updated successfully.");
+    } else {
+      await eventsAPI.createEvent(payload);
+      setMessage("Event created successfully.");
     }
+
+    setTimeout(() => navigate({ to: "/Host" }), 1000);
   };
 
-  const inputStyle = {
-    background: "#1e2235",
-    border: "1px solid #2a3050",
-    color: "#f1f5f9",
-    borderRadius: 8,
-  };
+  const directionsQuery = form.latitude && form.longitude
+    ? `${form.latitude},${form.longitude}`
+    : encodeURIComponent(form.location);
 
   return (
-    <div
-      className="d-flex flex-column min-vh-100"
-      style={{ background: "#101322", color: "#f1f5f9" }}
-    >
+    <div className="d-flex flex-column min-vh-100" style={{ background: "#071426", color: "#f8fafc" }}>
       <Navbar />
 
       <main className="flex-grow-1 px-3 px-lg-5 py-5">
-        <div className="container-fluid" style={{ maxWidth: 860 }}>
-
-          {/* Header */}
-          <div className="text-center mb-5">
-            <div
-              className="mx-auto mb-3 rounded-3 d-flex align-items-center justify-content-center"
-              style={{ width: 56, height: 56, background: "rgba(19,55,236,0.15)" }}
-            >
-              <i className="bi bi-plus-circle-fill text-primary fs-3"></i>
+        <div className="container-fluid px-0" style={{ maxWidth: 1040 }}>
+          <div className="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-5">
+            <div>
+              <div className="text-uppercase fw-semibold mb-2" style={{ color: "#7dd3fc", letterSpacing: "0.16em", fontSize: "0.74rem" }}>
+                {eventId ? "Edit event" : "Create event"}
+              </div>
+              <h1 className="fw-bold mb-2">{eventId ? "Update school event" : "Publish a new school event"}</h1>
+              <p className="mb-0" style={{ color: "#dbeafe" }}>
+                Organizers can manage description, date and time, location with map integration, capacity, and event category for their school.
+              </p>
             </div>
-            <h2 className="text-white fw-bold mb-2">Organize an Event</h2>
-            <p className="text-secondary">
-              Share your event with the campus community and start building your audience.
-            </p>
+            <button
+              type="button"
+              className="btn rounded-pill px-4"
+              onClick={() => navigate({ to: "/Host" })}
+              style={{ background: "rgba(255,255,255,0.08)", color: "#fff" }}
+            >
+              Back to dashboard
+            </button>
           </div>
 
-          {submitted ? (
-            <div
-              className="rounded-3 p-5 text-center"
-              style={{ background: "#151929", border: "1px solid #1e2235" }}
-            >
-              <div
-                className="mx-auto mb-4 rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: 72, height: 72, background: "#10b98122" }}
-              >
-                <i className="bi bi-check-circle-fill text-success fs-1"></i>
+          <div className="rounded-5 p-4 p-lg-5" style={{ background: "#0d1a34", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <form onSubmit={handleSubmit}>
+              <div className="row g-4">
+                <div className="col-12">
+                  <label className="form-label">Event title</label>
+                  <input className="form-control" name="title" value={form.title} onChange={handleChange} required style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">School</label>
+                  <select className="form-select" name="school" value={form.school} onChange={handleChange} required disabled={currentUser?.role === "organizer"} style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}>
+                    <option value="">Select school</option>
+                    {schools.map((school) => (
+                      <option key={school.code} value={school.code}>{school.code} - {school.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Category</label>
+                  <select className="form-select" name="category" value={form.category} onChange={handleChange} required style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}>
+                    {categoryOptions.map((category) => (
+                      <option key={category.value} value={category.value}>{category.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Start date and time</label>
+                  <input type="datetime-local" className="form-control" name="start_time" value={form.start_time} onChange={handleChange} required style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">End date and time</label>
+                  <input type="datetime-local" className="form-control" name="end_time" value={form.end_time} onChange={handleChange} required style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Capacity</label>
+                  <input type="number" className="form-control" name="capacity" value={form.capacity} onChange={handleChange} min="0" style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Venue or location</label>
+                  <input className="form-control" name="location" value={form.location} onChange={handleChange} required style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Latitude</label>
+                  <input className="form-control" name="latitude" value={form.latitude} onChange={handleChange} placeholder="-1.286389" style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />
+                </div>
+
+                <div className="col-12 col-md-6">
+                  <label className="form-label">Longitude</label>
+                  <input className="form-control" name="longitude" value={form.longitude} onChange={handleChange} placeholder="36.817223" style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }} />
+                </div>
+
+                <div className="col-12">
+                  <label className="form-label">Description</label>
+                  <textarea className="form-control" rows="5" name="description" value={form.description} onChange={handleChange} required style={{ background: "#10203f", border: "1px solid rgba(255,255,255,0.12)", color: "#fff" }}></textarea>
+                </div>
+
+                <div className="col-12">
+                  <div className="form-check">
+                    <input className="form-check-input" type="checkbox" name="is_public" checked={form.is_public} onChange={handleChange} id="is_public" />
+                    <label className="form-check-label" htmlFor="is_public">Make event visible on the normal users dashboard</label>
+                  </div>
+                </div>
+
+                <div className="col-12">
+                  <div className="rounded-5 overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <iframe
+                      title="Location preview"
+                      src={`https://maps.google.com/maps?q=${directionsQuery}&z=15&output=embed`}
+                      style={{ width: "100%", height: 280, border: 0 }}
+                    ></iframe>
+                  </div>
+                </div>
+
+                <div className="col-12 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                  <div style={{ color: "#7dd3fc" }}>{message}</div>
+                  <button type="submit" className="btn rounded-pill px-4 py-3" style={{ background: "#38bdf8", color: "#082f49", fontWeight: 700 }}>
+                    {eventId ? "Save changes" : "Publish event"}
+                  </button>
+                </div>
               </div>
-              <h4 className="text-white fw-bold mb-2">Event Created!</h4>
-              <p className="text-secondary mb-4">
-                Your event <strong className="text-white">"{form.title}"</strong> has been created successfully.
-              </p>
-              <button
-                className="btn btn-primary px-5 py-2 fw-semibold me-3"
-                style={{ background: "#1337ec", border: "none", borderRadius: 8 }}
-                onClick={() => navigate({ to: "/explore" })}
-              >
-                View Events
-              </button>
-              <button
-                className="btn btn-outline-secondary px-5 py-2 fw-semibold"
-                style={{ borderRadius: 8 }}
-                onClick={() => {
-                  setSubmitted(false);
-                  setForm({
-                    title: "",
-                    category: "",
-                    start_time: "",
-                    end_time: "",
-                    location: "",
-                    capacity: "",
-                    description: "",
-                  });
-                }}
-              >
-                Create Another
-              </button>
-            </div>
-          ) : (
-            <div
-              className="rounded-3 p-4 p-lg-5"
-              style={{ background: "#151929", border: "1px solid #1e2235" }}
-            >
-              {error && (
-                <div
-                  className="rounded-3 p-3 mb-4 d-flex align-items-start gap-2"
-                  style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)" }}
-                >
-                  <i className="bi bi-exclamation-circle-fill text-danger mt-1" style={{ fontSize: "0.9rem" }}></i>
-                  <span className="text-danger" style={{ fontSize: "0.85rem" }}>{error}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                <div className="row g-4">
-                  {/* Title */}
-                  <div className="col-12">
-                    <label className="form-label text-secondary small fw-semibold text-uppercase" style={{ letterSpacing: 1 }}>
-                      Event Title *
-                    </label>
-                    <input
-                      type="text"
-                      name="title"
-                      className="form-control"
-                      placeholder="e.g. Spring Hackathon 2024"
-                      style={inputStyle}
-                      value={form.title}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  {/* Category */}
-                  <div className="col-12 col-md-6">
-                    <label className="form-label text-secondary small fw-semibold text-uppercase" style={{ letterSpacing: 1 }}>
-                      Category *
-                    </label>
-                    <select
-                      name="category"
-                      className="form-select"
-                      style={inputStyle}
-                      value={form.category}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Select a category</option>
-                      {categoryOptions.map((c) => (
-                        <option key={c.value} value={c.value}>{c.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Start Time */}
-                  <div className="col-12 col-md-6">
-                    <label className="form-label text-secondary small fw-semibold text-uppercase" style={{ letterSpacing: 1 }}>
-                      Start Date & Time *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      name="start_time"
-                      className="form-control"
-                      style={inputStyle}
-                      value={form.start_time}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  {/* End Time */}
-                  <div className="col-12 col-md-6">
-                    <label className="form-label text-secondary small fw-semibold text-uppercase" style={{ letterSpacing: 1 }}>
-                      End Date & Time *
-                    </label>
-                    <input
-                      type="datetime-local"
-                      name="end_time"
-                      className="form-control"
-                      style={inputStyle}
-                      value={form.end_time}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  {/* Capacity */}
-                  <div className="col-12 col-md-6">
-                    <label className="form-label text-secondary small fw-semibold text-uppercase" style={{ letterSpacing: 1 }}>
-                      Capacity
-                    </label>
-                    <input
-                      type="number"
-                      name="capacity"
-                      className="form-control"
-                      placeholder="e.g. 100 (0 = unlimited)"
-                      style={inputStyle}
-                      value={form.capacity}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  {/* Location */}
-                  <div className="col-12">
-                    <label className="form-label text-secondary small fw-semibold text-uppercase" style={{ letterSpacing: 1 }}>
-                      Location / Venue *
-                    </label>
-                    <input
-                      type="text"
-                      name="location"
-                      className="form-control"
-                      placeholder="e.g. University Grand Hall, Block A"
-                      style={inputStyle}
-                      value={form.location}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-
-                  {/* Description */}
-                  <div className="col-12">
-                    <label className="form-label text-secondary small fw-semibold text-uppercase" style={{ letterSpacing: 1 }}>
-                      Description *
-                    </label>
-                    <textarea
-                      name="description"
-                      className="form-control"
-                      rows={5}
-                      placeholder="Tell attendees what to expect..."
-                      style={inputStyle}
-                      value={form.description}
-                      onChange={handleChange}
-                      required
-                    ></textarea>
-                  </div>
-
-                  {/* Tips box */}
-                  <div className="col-12">
-                    <div
-                      className="rounded-2 p-3 d-flex gap-3 align-items-start"
-                      style={{ background: "rgba(19,55,236,0.1)", border: "1px solid rgba(19,55,236,0.2)" }}
-                    >
-                      <i className="bi bi-lightbulb-fill text-primary mt-1"></i>
-                      <div>
-                        <div className="text-white fw-semibold mb-1" style={{ fontSize: "0.88rem" }}>
-                          Tips for a great listing
-                        </div>
-                        <ul className="text-secondary mb-0 ps-3" style={{ fontSize: "0.8rem", lineHeight: 1.8 }}>
-                          <li>Include a catchy title that describes the event clearly</li>
-                          <li>Mention any prizes, perks, or free resources</li>
-                          <li>Set an accurate capacity to manage registrations</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Submit */}
-                  <div className="col-12 d-flex gap-3 justify-content-end">
-                    <button
-                      type="button"
-                      className="btn px-4 py-2"
-                      style={{
-                        background: "#1e2235",
-                        color: "#94a3b8",
-                        border: "1px solid #2a3050",
-                        borderRadius: 8,
-                      }}
-                    >
-                      Save Draft
-                    </button>
-                    <button
-                      type="submit"
-                      className="btn btn-primary px-5 py-2 fw-semibold"
-                      style={{ background: loading ? "#0f2aaa" : "#1337ec", border: "none", borderRadius: 8 }}
-                      disabled={loading}
-                    >
-                      {loading ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                          Creating Event...
-                        </>
-                      ) : (
-                        <>
-                          Publish Event <i className="bi bi-arrow-right ms-1"></i>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          )}
+            </form>
+          </div>
         </div>
       </main>
 

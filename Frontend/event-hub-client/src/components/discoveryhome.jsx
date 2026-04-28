@@ -53,7 +53,7 @@ function DiscoveryHome({ searchValue, onSearchChange }) {
           <div className="input-group input-group-sm">
             <span
               className="input-group-text border-0"
-              style={{ background: "#1e2235" }}
+              style={{ background: "#dfe2f1" }}
             >
               <i className="bi bi-search text-secondary"></i>
             </span>

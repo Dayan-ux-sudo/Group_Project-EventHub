@@ -13,7 +13,7 @@ class CustomTokenObtainPairView(APIView):
     permission_classes = []
 
     def post(self, request):
-        serializer = CustomTokenObtainPairSerializer(data=request.data)
+        serializer = CustomTokenObtainPairSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             return Response(serializer.validated_data, status=status.HTTP_200_OK)
         logger.error(f"Login validation error: {serializer.errors}")
@@ -30,3 +30,8 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context

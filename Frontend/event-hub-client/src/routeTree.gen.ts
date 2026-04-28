@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as SchoolEventsPageRouteImport } from './routes/SchoolEventsPage'
 import { Route as MyEventsPageRouteImport } from './routes/MyEventsPage'
 import { Route as HostPageRouteImport } from './routes/HostPage'
 import { Route as ForgotpasswordRouteImport } from './routes/Forgotpassword'
@@ -32,6 +33,11 @@ const LoginRoute = LoginRouteImport.update({
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SchoolEventsPageRoute = SchoolEventsPageRouteImport.update({
+  id: '/SchoolEventsPage',
+  path: '/SchoolEventsPage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyEventsPageRoute = MyEventsPageRouteImport.update({
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/Forgotpassword': typeof ForgotpasswordRoute
   '/HostPage': typeof HostPageRoute
   '/MyEventsPage': typeof MyEventsPageRoute
+  '/SchoolEventsPage': typeof SchoolEventsPageRoute
   '/explore': typeof ExploreRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/Forgotpassword': typeof ForgotpasswordRoute
   '/HostPage': typeof HostPageRoute
   '/MyEventsPage': typeof MyEventsPageRoute
+  '/SchoolEventsPage': typeof SchoolEventsPageRoute
   '/explore': typeof ExploreRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/Forgotpassword': typeof ForgotpasswordRoute
   '/HostPage': typeof HostPageRoute
   '/MyEventsPage': typeof MyEventsPageRoute
+  '/SchoolEventsPage': typeof SchoolEventsPageRoute
   '/explore': typeof ExploreRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -108,6 +117,7 @@ export interface FileRouteTypes {
     | '/Forgotpassword'
     | '/HostPage'
     | '/MyEventsPage'
+    | '/SchoolEventsPage'
     | '/explore'
     | '/login'
     | '/register'
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/Forgotpassword'
     | '/HostPage'
     | '/MyEventsPage'
+    | '/SchoolEventsPage'
     | '/explore'
     | '/login'
     | '/register'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/Forgotpassword'
     | '/HostPage'
     | '/MyEventsPage'
+    | '/SchoolEventsPage'
     | '/explore'
     | '/login'
     | '/register'
@@ -142,6 +154,7 @@ export interface RootRouteChildren {
   ForgotpasswordRoute: typeof ForgotpasswordRoute
   HostPageRoute: typeof HostPageRoute
   MyEventsPageRoute: typeof MyEventsPageRoute
+  SchoolEventsPageRoute: typeof SchoolEventsPageRoute
   ExploreRoute: typeof ExploreRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
@@ -168,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/explore'
       fullPath: '/explore'
       preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/SchoolEventsPage': {
+      id: '/SchoolEventsPage'
+      path: '/SchoolEventsPage'
+      fullPath: '/SchoolEventsPage'
+      preLoaderRoute: typeof SchoolEventsPageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/MyEventsPage': {
@@ -222,6 +242,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotpasswordRoute: ForgotpasswordRoute,
   HostPageRoute: HostPageRoute,
   MyEventsPageRoute: MyEventsPageRoute,
+  SchoolEventsPageRoute: SchoolEventsPageRoute,
   ExploreRoute: ExploreRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,

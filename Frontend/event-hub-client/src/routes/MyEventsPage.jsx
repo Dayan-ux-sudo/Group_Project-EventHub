@@ -1,170 +1,116 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+
+import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
+import { eventsAPI } from "../api";
 
 export const Route = createFileRoute("/MyEventsPage")({
   component: MyEventsPage,
 });
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import events from "../components/EventsData";
-
-const tabs = ["Upcoming", "Past", "Saved"];
 
 function MyEventsPage() {
-  const [activeTab, setActiveTab] = useState("Upcoming");
   const navigate = useNavigate();
+  const [registrations, setRegistrations] = useState([]);
 
-  // For demo: upcoming = first 3, saved = last 2
-  const upcoming = events.slice(0, 3);
-  const past = events.slice(3, 5);
-  const saved = events.slice(4);
+  useEffect(() => {
+    const fetchRegistrations = async () => {
+      try {
+        const response = await eventsAPI.getMyRegistrations();
+        setRegistrations(Array.isArray(response.data) ? response.data : response.data.results || []);
+      } catch {
+        setRegistrations([]);
+      }
+    };
 
-  const displayed =
-    activeTab === "Upcoming" ? upcoming : activeTab === "Past" ? past : saved;
+    fetchRegistrations();
+  }, []);
+
+  const now = Date.now();
+  const upcoming = registrations.filter((item) => new Date(item.event.start_time).getTime() >= now);
+  const past = registrations.filter((item) => new Date(item.event.start_time).getTime() < now);
 
   return (
-    <div
-      className="d-flex flex-column min-vh-100"
-      style={{ background: "#101322", color: "#f1f5f9" }}
-    >
+    <div className="d-flex flex-column min-vh-100" style={{ background: "#071426", color: "#f8fafc" }}>
       <Navbar />
 
       <main className="flex-grow-1 px-3 px-lg-5 py-5">
-        <div className="container-fluid" style={{ maxWidth: 1280 }}>
-
-          {/* Page header */}
-          <div className="mb-4">
-            <h2 className="text-white fw-bold mb-1">My Events</h2>
-            <p className="text-secondary">Track your registrations, saved events, and history.</p>
+        <div className="container-fluid px-0" style={{ maxWidth: 1280 }}>
+          <div className="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-5">
+            <div>
+              <div className="text-uppercase fw-semibold mb-2" style={{ color: "#7dd3fc", letterSpacing: "0.16em", fontSize: "0.74rem" }}>
+                My dashboard
+              </div>
+              <h1 className="fw-bold mb-1">My RSVPs and event history</h1>
+              <p className="mb-0" style={{ color: "#d7e7f6" }}>
+                Track where you are attending and what you have already joined across EventHub.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn rounded-pill px-4"
+              onClick={() => navigate({ to: "/explore" })}
+              style={{ background: "#38bdf8", color: "#082f49", fontWeight: 700 }}
+            >
+              Browse more events
+            </button>
           </div>
 
-          {/* Stats row */}
-          <div className="row g-3 mb-5">
+          <div className="row g-4 mb-5">
             {[
-              { label: "Upcoming", value: upcoming.length, icon: "bi-calendar-check", color: "#1337ec" },
-              { label: "Attended", value: past.length, icon: "bi-check2-circle", color: "#10b981" },
-              { label: "Saved", value: saved.length, icon: "bi-heart-fill", color: "#ef4444" },
+              { label: "Upcoming", value: upcoming.length, icon: "bi-calendar-check" },
+              { label: "Past", value: past.length, icon: "bi-clock-history" },
+              { label: "Total RSVPs", value: registrations.length, icon: "bi-people" },
             ].map((stat) => (
-              <div key={stat.label} className="col-6 col-md-4 col-lg-3">
-                <div
-                  className="rounded-3 p-3 d-flex align-items-center gap-3"
-                  style={{ background: "#151929", border: "1px solid #1e2235" }}
-                >
-                  <div
-                    className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0"
-                    style={{
-                      width: 44,
-                      height: 44,
-                      background: `${stat.color}22`,
-                    }}
-                  >
-                    <i className={`bi ${stat.icon}`} style={{ color: stat.color, fontSize: "1.2rem" }}></i>
+              <div key={stat.label} className="col-12 col-md-4">
+                <div className="rounded-5 p-4 h-100" style={{ background: "#0d1a34", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <div
+                      className="d-flex align-items-center justify-content-center rounded-circle"
+                      style={{ width: 56, height: 56, background: "rgba(56, 189, 248, 0.12)", color: "#7dd3fc" }}
+                    >
+                      <i className={`bi ${stat.icon} fs-4`}></i>
+                    </div>
+                    <div className="display-6 fw-bold mb-0">{stat.value}</div>
                   </div>
-                  <div>
-                    <div className="text-white fw-bold fs-4 lh-1">{stat.value}</div>
-                    <div className="text-secondary" style={{ fontSize: "0.8rem" }}>{stat.label}</div>
-                  </div>
+                  <div style={{ color: "#dbeafe" }}>{stat.label}</div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Tabs */}
-          <div
-            className="d-flex gap-1 mb-4 rounded-2 p-1"
-            style={{ background: "#151929", width: "fit-content" }}
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                className="btn btn-sm px-4 py-2 rounded-2"
-                style={{
-                  background: activeTab === tab ? "#1337ec" : "transparent",
-                  color: activeTab === tab ? "#fff" : "#94a3b8",
-                  border: "none",
-                  fontWeight: activeTab === tab ? 600 : 400,
-                  fontSize: "0.85rem",
-                  transition: "all 0.2s",
-                }}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Events list */}
-          <div className="d-flex flex-column gap-3">
-            {displayed.map((event) => (
-              <div
-                key={event.id}
-                className="rounded-3 p-3 d-flex flex-column flex-sm-row gap-3 align-items-start align-items-sm-center"
-                style={{
-                  background: "#151929",
-                  border: "1px solid #1e2235",
-                  cursor: "pointer",
-                  transition: "border-color 0.2s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#1337ec55")}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#1e2235")}
-                onClick={() => navigate({ to: "/event/$id", params: { id: String(event.id) } })}
-              >
-                {/* Thumbnail */}
-                <div
-                  className="rounded-2 overflow-hidden flex-shrink-0"
-                  style={{ width: 80, height: 80 }}
-                >
-                  <img
-                    src={event.image}
-                    alt={event.title}
-                    className="w-100 h-100 object-fit-cover"
-                  />
-                </div>
-
-                {/* Info */}
-                <div className="flex-grow-1">
-                  <div className="d-flex align-items-center gap-2 mb-1">
-                    <span
-                      className="badge text-uppercase"
-                      style={{ background: "#1337ec22", color: "#7ea4ff", fontSize: "0.6rem", letterSpacing: 1 }}
-                    >
-                      {event.category}
-                    </span>
-                    <span className="text-secondary" style={{ fontSize: "0.75rem" }}>
-                      {event.date} &bull; {event.time}
-                    </span>
+          <div className="row g-4">
+            {[{ title: "Upcoming", items: upcoming }, { title: "Past", items: past }].map((group) => (
+              <div key={group.title} className="col-12 col-xl-6">
+                <div className="rounded-5 p-4 h-100" style={{ background: "#0d1a34", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <h2 className="fw-bold mb-4">{group.title}</h2>
+                  <div className="d-flex flex-column gap-3">
+                    {group.items.map((registration) => (
+                      <button
+                        key={registration.id}
+                        type="button"
+                        onClick={() => navigate({ to: "/EventDetailPage", search: { eventId: registration.event.id } })}
+                        className="w-100 text-start rounded-4 border-0 p-4"
+                        style={{ background: "rgba(56, 189, 248, 0.06)", color: "#fff" }}
+                      >
+                        <div className="d-flex justify-content-between align-items-start gap-3">
+                          <div>
+                            <div className="mb-2" style={{ color: "#7dd3fc", textTransform: "capitalize", fontSize: "0.82rem" }}>
+                              {registration.event.school_code} • {registration.event.category}
+                            </div>
+                            <h3 className="fw-bold mb-2" style={{ fontSize: "1.15rem" }}>{registration.event.title}</h3>
+                            <div style={{ color: "#dbeafe", fontSize: "0.9rem", lineHeight: 1.7 }}>
+                              {new Date(registration.event.start_time).toLocaleString()} • {registration.event.location}
+                            </div>
+                          </div>
+                          <span className="badge rounded-pill" style={{ background: "#10b981", color: "#ecfeff" }}>
+                            {registration.status}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                    {group.items.length === 0 ? <div style={{ color: "#cbd5e1" }}>No {group.title.toLowerCase()} events yet.</div> : null}
                   </div>
-                  <h6 className="text-white fw-semibold mb-1">{event.title}</h6>
-                  <div className="text-secondary d-flex align-items-center gap-1" style={{ fontSize: "0.78rem" }}>
-                    <i className="bi bi-geo-alt"></i> {event.location}
-                  </div>
-                </div>
-
-                {/* Action */}
-                <div className="d-flex gap-2 flex-shrink-0">
-                  {activeTab === "Upcoming" && (
-                    <span
-                      className="badge d-flex align-items-center gap-1"
-                      style={{ background: "#10b98122", color: "#10b981", fontSize: "0.75rem", padding: "6px 12px" }}
-                    >
-                      <i className="bi bi-check-circle-fill"></i> Registered
-                    </span>
-                  )}
-                  <button
-                    className="btn btn-sm"
-                    style={{
-                      background: "#1e2235",
-                      color: "#94a3b8",
-                      border: "none",
-                      fontSize: "0.8rem",
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate({ to: "/event/$id", params: { id: String(event.id) } });
-                    }}
-                  >
-                    View <i className="bi bi-chevron-right"></i>
-                  </button>
                 </div>
               </div>
             ))}

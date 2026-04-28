@@ -1,154 +1,221 @@
-import { createFileRoute } from '@tanstack/react-router'
-import React, { useState, useEffect } from "react";
-import CategoryFilter from "../components/CategoryFilter";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import React, { useEffect, useMemo, useState } from "react";
+
+import eventHubIcon from "../assets/eventhub-icon.png";
 import EventCard from "../components/EventCard";
 import Footer from "../components/Footer";
+import Navbar from "../components/Navbar";
 import { eventsAPI } from "../api";
 
- export const Route = createFileRoute('/explore')({
+export const Route = createFileRoute("/explore")({
   component: ExplorePage,
-})
+});
 
- 
 function ExplorePage() {
-  const [activeCategory, setActiveCategory] = useState("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [schools, setSchools] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
- 
+
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchData = async () => {
       try {
-        const response = await eventsAPI.getEvents();
-        // Handle both array and paginated responses
-        const eventsData = Array.isArray(response.data) ? response.data : response.data.results || [];
-        setEvents(eventsData);
-      } catch (err) {
-        setError('Failed to load events');
-        console.error(err);
+        const [eventsResponse, schoolsResponse] = await Promise.all([
+          eventsAPI.getEvents(),
+          eventsAPI.getSchools(),
+        ]);
+        const eventResults = Array.isArray(eventsResponse.data) ? eventsResponse.data : eventsResponse.data.results || [];
+        const schoolResults = Array.isArray(schoolsResponse.data) ? schoolsResponse.data : schoolsResponse.data.results || [];
+        setEvents(eventResults);
+        setSchools(schoolResults);
       } finally {
         setLoading(false);
       }
     };
-    fetchEvents();
+
+    fetchData();
   }, []);
- 
-  const filtered = events.filter((e) => {
-    const matchCat = activeCategory === "ALL" || e.category === activeCategory;
-    const matchSearch =
-      !searchQuery ||
-      e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchCat && matchSearch;
-  });
- 
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center min-vh-100" style={{ background: "#101322", color: "#f1f5f9" }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    );
-  }
- 
-  if (error) {
-    return (
-      <div className="d-flex justify-content-center align-items-center min-vh-100" style={{ background: "#101322", color: "#f1f5f9" }}>
-        <div className="text-center">
-          <i className="bi bi-exclamation-triangle display-4 text-danger mb-3"></i>
-          <p className="text-secondary">{error}</p>
-        </div>
-      </div>
-    );
-  }
- 
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((event) => {
+      const matchesCategory = activeCategory === "all" || event.category === activeCategory;
+      const haystack = `${event.title} ${event.description} ${event.location} ${event.school?.name || ""}`.toLowerCase();
+      const matchesSearch = haystack.includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [activeCategory, events, searchQuery]);
+
+  const categories = ["all", "workshop", "social", "academic", "seminar", "hackathon", "other"];
+
   return (
-    <div
-      className="d-flex flex-column min-vh-100"
-      style={{ background: "#101322", color: "#f1f5f9" }}
-    >
-      
- 
-      <main className="flex-grow-1 px-3 px-lg-5 py-5">
-        <div className="container-fluid" style={{ maxWidth: 1280 }}>
- 
-          {/* Hero */}
-          <section className="text-center mb-5">
-            <h1
-              className="display-5 fw-extrabold text-white mb-3"
-              style={{ fontWeight: 800 }}
-            >
-              Discover Campus Life
-            </h1>
-            <p className="text-secondary mb-4 mx-auto" style={{ maxWidth: 560, fontSize: "1.05rem" }}>
-              Find workshops, hackathons, and social mixers happening around your campus today.
-            </p>
-            {/* Search bar */}
-            <div className="mx-auto" style={{ maxWidth: 680 }}>
-              <div
-                className="d-flex align-items-center rounded-3 p-2"
-                style={{
-                  background: "#1e2235",
-                  border: "1px solid #2a3050",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-                }}
-              >
-                <i className="bi bi-search text-secondary ms-2 me-2 fs-5"></i>
-                <input
-                  type="text"
-                  className="form-control border-0 bg-transparent text-white"
-                  placeholder="Search for events, clubs, or speakers..."
-                  style={{ fontSize: "1rem" }}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <button
-                  className="btn btn-primary px-4 py-2 fw-semibold rounded-2"
-                  style={{ background: "#1337ec", border: "none" }}
-                >
-                  Search
-                </button>
+    <div className="d-flex flex-column min-vh-100" style={{ background: "#071426", color: "#f8fafc" }}>
+      <Navbar />
+
+      <main className="flex-grow-1">
+        <section
+          className="px-3 px-lg-5 py-5"
+          style={{
+            background:
+              `linear-gradient(135deg, rgba(5, 18, 43, 0.96), rgba(10, 39, 89, 0.88)), url(${eventHubIcon})`,
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "right 6% center",
+            backgroundSize: "320px",
+          }}
+        >
+          <div className="container-fluid px-0" style={{ maxWidth: 1280 }}>
+            <div className="row align-items-center g-4">
+              <div className="col-12 col-xl-7">
+                
+                <h1 className="fw-bold mb-3" style={{ fontSize: "clamp(2.4rem, 5vw, 4.4rem)", lineHeight: 1.02 }}>
+                  Discover schools, events, and campus moments from one place.
+                </h1>
+                
+              </div>
+              <div className="col-12 col-xl-5">
+                <div className="rounded-5 p-4" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)", backdropFilter: "blur(14px)" }}>
+                  <div className="input-group input-group-lg mb-3">
+                    <span className="input-group-text border-0" style={{ background: "#0f2448", color: "#7dd3fc" }}>
+                      <i className="bi bi-search"></i>
+                    </span>
+                    <input
+                      type="text"
+                      className="form-control border-0 text-white"
+                      placeholder="Search school events, categories, or locations"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      style={{ background: "#0f2448" }}
+                    />
+                  </div>
+                  <div className="d-flex flex-wrap gap-2">
+                    {categories.map((category) => (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => setActiveCategory(category)}
+                        className="btn btn-sm rounded-pill px-3"
+                        style={{
+                          background: activeCategory === category ? "#38bdf8" : "rgba(255,255,255,0.08)",
+                          color: activeCategory === category ? "#082f49" : "#e0f2fe",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          </section>
- 
-          {/* Category filter */}
-          <section className="mb-5">
-            <CategoryFilter active={activeCategory} onChange={setActiveCategory} />
-          </section>
- 
-          {/* Upcoming Events */}
-          <section>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h5 className="text-white fw-bold mb-0">Upcoming Events</h5>
-              <a href="#" className="text-primary text-decoration-none" style={{ fontSize: "0.9rem" }}>
-                View all <i className="bi bi-arrow-right"></i>
-              </a>
+          </div>
+        </section>
+
+        <section className="px-3 px-lg-5 py-5">
+          <div className="container-fluid px-0" style={{ maxWidth: 1280 }}>
+            <div className="d-flex justify-content-between align-items-end mb-4">
+              <div>
+                <div className="text-uppercase fw-semibold mb-2" style={{ color: "#7dd3fc", letterSpacing: "0.16em", fontSize: "0.74rem" }}>
+                  Schools
+                </div>
+                <h2 className="fw-bold mb-0">Explore by school</h2>
+              </div>
+              <div style={{ color: "#cbd5e1" }}>{schools.length} schools live on EventHub</div>
             </div>
- 
-            {filtered.length === 0 ? (
-              <div className="text-center py-5">
-                <i className="bi bi-calendar-x display-4 text-secondary mb-3 d-block"></i>
-                <p className="text-secondary">No events found matching your search.</p>
+
+            <div className="row g-4">
+              {schools.map((school) => (
+                <div key={school.code} className="col-12 col-md-6 col-xl-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: "/SchoolEventsPage", search: { school: school.code } })}
+                    className="w-100 text-start border-0 rounded-5 overflow-hidden p-0"
+                    style={{
+                      background: "#0b1730",
+                      boxShadow: "0 18px 48px rgba(2, 6, 23, 0.25)",
+                      transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                    }}
+                    onMouseEnter={(event) => {
+                      event.currentTarget.style.transform = "translateY(-8px)";
+                      event.currentTarget.style.boxShadow = "0 26px 54px rgba(14, 116, 144, 0.25)";
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.style.transform = "translateY(0)";
+                      event.currentTarget.style.boxShadow = "0 18px 48px rgba(2, 6, 23, 0.25)";
+                    }}
+                  >
+                    <div
+                      style={{
+                        minHeight: 280,
+                        backgroundImage: `linear-gradient(180deg, rgba(2,6,23,0.18), rgba(2,6,23,0.88)), url(${school.background_image})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        padding: 28,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "end",
+                      }}
+                    >
+                      <div className="d-flex justify-content-between align-items-start mb-3">
+                        <span className="badge rounded-pill" style={{ background: "rgba(125, 211, 252, 0.18)", color: "#e0f2fe" }}>
+                          {school.code}
+                        </span>
+                        <span style={{ color: "#e2e8f0", fontSize: "0.84rem" }}>{school.event_count} events</span>
+                      </div>
+                      <h3 className="fw-bold mb-2" style={{ fontSize: "1.4rem" }}>{school.name}</h3>
+                      <p className="mb-3" style={{ color: "#dbeafe", fontSize: "0.92rem", lineHeight: 1.7 }}>
+                        {school.description}
+                      </p>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <div style={{ color: "#7dd3fc", fontSize: "0.78rem" }}>Organizer</div>
+                          <div className="fw-semibold text-white">{school.admin?.full_name || "Awaiting assignment"}</div>
+                        </div>
+                        <span className="text-white fw-semibold">
+                          View events <i className="bi bi-arrow-right-short"></i>
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-3 px-lg-5 pb-5">
+          <div className="container-fluid px-0" style={{ maxWidth: 1280 }}>
+            <div className="d-flex justify-content-between align-items-end mb-4">
+              <div>
+                <div className="text-uppercase fw-semibold mb-2" style={{ color: "#7dd3fc", letterSpacing: "0.16em", fontSize: "0.74rem" }}>
+                  Live Events
+                </div>
+              
+              </div>
+              <div style={{ color: "#cbd5e1" }}>{filteredEvents.length} matching events</div>
+            </div>
+
+            {loading ? (
+              <div className="d-flex justify-content-center py-5">
+                <div className="spinner-border text-info"></div>
               </div>
             ) : (
               <div className="row g-4">
-                {filtered.map((event) => (
-                  <div key={event.id} className="col-12 col-sm-6 col-lg-4">
+                {filteredEvents.map((event) => (
+                  <div key={event.id} className="col-12 col-md-6 col-xl-4">
                     <EventCard event={event} />
                   </div>
                 ))}
               </div>
             )}
-          </section>
-        </div>
+          </div>
+        </section>
       </main>
- 
+
       <Footer />
     </div>
   );
 }
- 
+
 export default ExplorePage;

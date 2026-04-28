@@ -51,18 +51,20 @@ function PageShell({ children }) {
 
       {/* Top bar */}
       <div
-        className="px-3 px-sm-4 px-lg-5 py-3 py-sm-4 d-flex align-items-center"
+        className="px-3 px-sm-4 px-lg-5 py-3 py-sm-4 d-flex align-items-center justify-content-center"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
         {/* Plain <a> — avoids the <Link>/<link> void-element error entirely */}
-        <a href="/" className="d-flex align-items-center gap-2 text-decoration-none">
+          <a href="/" className="d-flex align-items-center justify-content-center gap-3 text-decoration-none text-center">
           <div
             className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
-            style={{ width: 34, height: 34, background: "#1337ec" }}
+            style={{ width: 42, height: 42, background: "#1337ec" }}
           >
-            <i className="bi bi-rocket-takeoff-fill text-white" style={{ fontSize: "1rem" }}></i>
+            <i className="bi bi-rocket-takeoff-fill text-white" style={{ fontSize: "1.15rem" }}></i>
           </div>
-          <span className="fw-bold text-white fs-5">CampusEvents</span>
+          <span className="fw-bold text-white" style={{ fontSize: "2rem", lineHeight: 1 }}>
+            CampusEvents
+          </span>
         </a>
       </div>
 
