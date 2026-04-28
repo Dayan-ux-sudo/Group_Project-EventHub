@@ -120,6 +120,7 @@ function Navbar() {
       setStoredUser(response.data);
     } finally {
       setSaving(false);
+      event.target.value = "";
     }
   };
 
@@ -127,6 +128,25 @@ function Navbar() {
     const avatarSize = event.target.value;
     const formData = new FormData();
     formData.append("avatar_size", avatarSize);
+
+    try {
+      setSaving(true);
+      const response = await authAPI.updateProfile(formData);
+      setUser(response.data);
+      setStoredUser(response.data);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!user?.avatar_url) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("remove_avatar", "true");
+    formData.append("avatar_size", String(user?.avatar_size || 44));
 
     try {
       setSaving(true);
@@ -166,16 +186,7 @@ function Navbar() {
             <NavLinkItem to="/explore">Dashboard</NavLinkItem>
             {user && <NavLinkItem to="/MyEventsPage">My Events</NavLinkItem>}
             {user?.role === "organizer" || user?.role === "superuser_manager" ? <NavLinkItem to="/Host">Organizer Dashboard</NavLinkItem> : null}
-            {user ? (
-              <button
-                type="button"
-                onClick={() => navigate({ to: user.role === "student" ? "/explore" : "/Host" })}
-                className="btn fw-semibold px-3"
-                style={{ background: "#f8fafc", color: "#123069", borderRadius: 999 }}
-              >
-                {user.role === "student" ? "Browse Schools" : "Manage Schools"}
-              </button>
-            ) : (
+            {!user ? (
               <Link
                 to="/login"
                 className="btn fw-semibold px-4"
@@ -183,7 +194,7 @@ function Navbar() {
               >
                 Sign In
               </Link>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -276,6 +287,20 @@ function Navbar() {
                     onChange={handleAvatarChange}
                     style={{ background: "#10203f", color: "#fff", border: "1px solid rgba(255,255,255,0.14)" }}
                   />
+
+                  <button
+                    type="button"
+                    className="btn btn-sm w-100 mb-3"
+                    onClick={handleRemoveAvatar}
+                    disabled={!user?.avatar_url || saving}
+                    style={{
+                      background: "rgba(239, 68, 68, 0.16)",
+                      color: "#fecaca",
+                      border: "1px solid rgba(239, 68, 68, 0.34)",
+                    }}
+                  >
+                    Remove profile picture
+                  </button>
 
                   <label className="d-flex justify-content-between align-items-center text-white fw-semibold mb-2" style={{ fontSize: "0.84rem" }}>
                     <span>Avatar size</span>

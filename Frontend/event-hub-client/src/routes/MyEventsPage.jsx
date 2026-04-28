@@ -12,19 +12,39 @@ export const Route = createFileRoute("/MyEventsPage")({
 function MyEventsPage() {
   const navigate = useNavigate();
   const [registrations, setRegistrations] = useState([]);
+  const [cancellingEventId, setCancellingEventId] = useState(null);
+  const [cancelError, setCancelError] = useState("");
+
+  const loadRegistrations = async () => {
+    try {
+      const response = await eventsAPI.getMyRegistrations();
+      setRegistrations(Array.isArray(response.data) ? response.data : response.data.results || []);
+    } catch {
+      setRegistrations([]);
+    }
+  };
 
   useEffect(() => {
-    const fetchRegistrations = async () => {
-      try {
-        const response = await eventsAPI.getMyRegistrations();
-        setRegistrations(Array.isArray(response.data) ? response.data : response.data.results || []);
-      } catch {
-        setRegistrations([]);
-      }
-    };
-
-    fetchRegistrations();
+    loadRegistrations();
   }, []);
+
+  const handleDeleteBooking = async (eventId) => {
+    const shouldDelete = window.confirm("Are you sure you want to delete the event");
+    if (!shouldDelete) {
+      return;
+    }
+
+    try {
+      setCancelError("");
+      setCancellingEventId(eventId);
+      await eventsAPI.cancelRsvp(eventId);
+      await loadRegistrations();
+    } catch {
+      setCancelError("Unable to delete this booking right now.");
+    } finally {
+      setCancellingEventId(null);
+    }
+  };
 
   const now = Date.now();
   const upcoming = registrations.filter((item) => new Date(item.event.start_time).getTime() >= now);
@@ -84,30 +104,56 @@ function MyEventsPage() {
               <div key={group.title} className="col-12 col-xl-6">
                 <div className="rounded-5 p-4 h-100" style={{ background: "#0d1a34", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <h2 className="fw-bold mb-4">{group.title}</h2>
+                  {cancelError ? (
+                    <div
+                      className="alert py-2 px-3 mb-3"
+                      style={{ background: "rgba(239, 68, 68, 0.15)", color: "#fecaca", border: "1px solid rgba(239, 68, 68, 0.35)" }}
+                    >
+                      {cancelError}
+                    </div>
+                  ) : null}
                   <div className="d-flex flex-column gap-3">
                     {group.items.map((registration) => (
-                      <button
+                      <div
                         key={registration.id}
-                        type="button"
-                        onClick={() => navigate({ to: "/EventDetailPage", search: { eventId: registration.event.id } })}
                         className="w-100 text-start rounded-4 border-0 p-4"
                         style={{ background: "rgba(56, 189, 248, 0.06)", color: "#fff" }}
                       >
                         <div className="d-flex justify-content-between align-items-start gap-3">
-                          <div>
+                          <button
+                            type="button"
+                            onClick={() => navigate({ to: "/EventDetailPage", search: { eventId: registration.event.id } })}
+                            className="text-start border-0 bg-transparent p-0 flex-grow-1"
+                            style={{ color: "#fff" }}
+                          >
                             <div className="mb-2" style={{ color: "#7dd3fc", textTransform: "capitalize", fontSize: "0.82rem" }}>
-                              {registration.event.school_code} • {registration.event.category}
+                              {registration.event.school_code} - {registration.event.category}
                             </div>
                             <h3 className="fw-bold mb-2" style={{ fontSize: "1.15rem" }}>{registration.event.title}</h3>
                             <div style={{ color: "#dbeafe", fontSize: "0.9rem", lineHeight: 1.7 }}>
-                              {new Date(registration.event.start_time).toLocaleString()} • {registration.event.location}
+                              {new Date(registration.event.start_time).toLocaleString()} - {registration.event.location}
                             </div>
+                          </button>
+                          <div className="d-flex flex-column align-items-end gap-2">
+                            <span className="badge rounded-pill" style={{ background: "#10b981", color: "#ecfeff" }}>
+                              {registration.status}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBooking(registration.event.id)}
+                              disabled={cancellingEventId === registration.event.id}
+                              className="btn btn-sm"
+                              style={{
+                                background: "rgba(239, 68, 68, 0.15)",
+                                color: "#fecaca",
+                                border: "1px solid rgba(239, 68, 68, 0.35)",
+                              }}
+                            >
+                              {cancellingEventId === registration.event.id ? "Deleting..." : "Delete booking"}
+                            </button>
                           </div>
-                          <span className="badge rounded-pill" style={{ background: "#10b981", color: "#ecfeff" }}>
-                            {registration.status}
-                          </span>
                         </div>
-                      </button>
+                      </div>
                     ))}
                     {group.items.length === 0 ? <div style={{ color: "#cbd5e1" }}>No {group.title.toLowerCase()} events yet.</div> : null}
                   </div>

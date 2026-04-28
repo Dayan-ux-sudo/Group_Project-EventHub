@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
- 
+
 const categoryColors = {
   workshop: { bg: "#1337ec", text: "#fff" },
   hackathon: { bg: "#f59e0b", text: "#fff" },
@@ -25,6 +25,15 @@ const categoryBackgrounds = {
     "https://cdn.pixabay.com/photo/2016/09/17/21/47/audience-1677028_1280.jpg",
 };
 
+const titleSpecificBackgrounds = {
+  "Ward Leadership Conference":
+    "https://images.pexels.com/photos/6129159/pexels-photo-6129159.jpeg?cs=srgb&dl=pexels-rdne-6129159.jpg&fm=jpg",
+  "Cybersecurity Capture Lab":
+    "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&fm=jpg&q=80&w=1800",
+  "CyberSecurity Capture Lab":
+    "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&fm=jpg&q=80&w=1800",
+};
+
 const titleImageKeywords = {
   "Bridge Design Sprint": ["bridge", "engineering", "architecture"],
   "Embedded Systems Workshop": ["electronics", "microcontroller", "circuit"],
@@ -35,24 +44,26 @@ const titleImageKeywords = {
   "Curriculum Innovation Roundtable": ["education", "meeting", "curriculum"],
   "Literacy Outreach Day": ["reading", "books", "students"],
   "Full Stack Build Sprint": ["code", "laptop", "programming", "developer"],
-  "Cybersecurity Capture Lab": ["cybersecurity", "code", "laptop", "security"],
+  "Cybersecurity Capture Lab": ["cybersecurity", "laptop", "padlock", "security"],
+  "CyberSecurity Capture Lab": ["cybersecurity", "laptop", "padlock", "security"],
   "AI and Data Science Forum": ["artificial-intelligence", "data", "analytics"],
   "Cloud Computing Hack Night": ["cloud", "server", "coding"],
   "Clinical Skills Bootcamp": ["medical", "hospital", "training"],
-  "Surgical Innovation Grand Round": ["surgery", "hospital", "medical"],
-  "Research Ethics Colloquium": ["people", "discussion", "table", "meeting"],
+  "Surgical Innovation Grand Round": ["doctor", "operating", "patient", "surgery"],
+  "Surgical Innovaion Grand Round": ["doctor", "operating", "patient", "surgery"],
+  "Research Ethics Colloquium": ["research", "laboratory", "science", "microscope"],
   "Community Health Screening": ["healthcare", "community", "clinic"],
   "Startup Pitch Arena": ["startup", "pitch", "business"],
   "Market Trends Briefing": ["finance", "market", "charts"],
   "Office Leadership Mixer": ["business", "networking", "office"],
-  "Financial Modelling Lab": ["spreadsheet", "finance", "values", "laptop"],
+  "Financial Modelling Lab": ["budget", "analysis", "financial", "report"],
   "Lab Safety and Technique Workshop": ["science", "laboratory", "equipment"],
   "Molecular Discovery Showcase": ["science", "molecule", "microscope"],
   "Science Communication Forum": ["science", "speaker", "audience"],
   "Experiment Night Live": ["science", "experiment", "students"],
   "Emergency Response Drill": ["ambulance", "emergency", "training"],
   "Maternal Care Seminar": ["doctor", "nurse", "maternity", "hospital"],
-  "Ward Leadership Conference": ["doctor", "nurse", "training", "hospital"],
+  "Ward Leadership Conference": ["doctor", "nurses", "meeting", "hospital-team"],
   "First Aid Community Camp": ["first-aid", "kit", "medical", "emergency"],
 };
 
@@ -114,31 +125,36 @@ const getTitleSearchImage = (title = "") => {
 };
 
 const getEventBackground = (event) => {
-  const exactTitleImage = getTitleSpecificImage(event.title);
+  const eventTitle = typeof event?.title === "string" ? event.title.trim() : "";
+  const exactBackground = titleSpecificBackgrounds[eventTitle] || titleSpecificBackgrounds[event.title];
+  if (exactBackground) {
+    return exactBackground;
+  }
+
+  const exactTitleImage = getTitleSpecificImage(eventTitle);
   if (exactTitleImage) {
     return exactTitleImage;
   }
 
-  const titleQueried = getTitleSearchImage(event.title);
+  const titleQueried = getTitleSearchImage(eventTitle);
   if (titleQueried) {
     return titleQueried;
   }
 
   return event.school?.background_image || categoryBackgrounds[event.category] || categoryBackgrounds.other;
 };
- 
+
 function EventCard({ event }) {
-  const [liked, setLiked] = useState(false); // Backend doesn't have liked, so default false
+  const [liked, setLiked] = useState(false);
   const navigate = useNavigate();
   const cat = categoryColors[event.category] || { bg: "#555", text: "#fff" };
   const eventBackground = getEventBackground(event);
- 
-  // Format date and time
+
   const startDate = new Date(event.start_time);
   const endDate = new Date(event.end_time);
-  const dateStr = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const timeStr = `${startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
- 
+  const dateStr = startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const timeStr = `${startDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })} - ${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })}`;
+
   return (
     <div
       className="card h-100 border-0 rounded-3 overflow-hidden"
@@ -194,8 +210,7 @@ function EventCard({ event }) {
           ></i>
         </button>
       </div>
- 
-      {/* Body */}
+
       <div className="card-body px-3 pt-3 pb-2">
         <div className="d-flex align-items-center gap-2 mb-2">
           <span
@@ -215,7 +230,7 @@ function EventCard({ event }) {
         </div>
         <h6 className="card-title text-white fw-bold mb-1">{event.title}</h6>
         <div className="mb-2" style={{ color: "#7dd3fc", fontSize: "0.76rem" }}>
-          {event.school?.code} • {event.organizer_name || event.organizer_email}
+          {event.school?.code} - {event.organizer_name || event.organizer_email}
         </div>
         <p
           className="card-text text-secondary mb-3"
@@ -224,11 +239,10 @@ function EventCard({ event }) {
           {event.description}
         </p>
       </div>
- 
-      {/* Footer */}
+
       <div className="card-footer border-0 bg-transparent px-3 pb-3 pt-0 d-flex justify-content-between align-items-center">
         <span className="text-secondary d-flex align-items-center gap-1" style={{ fontSize: "0.78rem" }}>
-          <i className="bi bi-geo-alt"></i> {event.location || 'TBD'}
+          <i className="bi bi-geo-alt"></i> {event.location || "TBD"}
         </span>
         <span
           className="text-primary fw-semibold d-flex align-items-center gap-1"
@@ -240,5 +254,5 @@ function EventCard({ event }) {
     </div>
   );
 }
- 
+
 export default EventCard;

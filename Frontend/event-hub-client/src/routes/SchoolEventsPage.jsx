@@ -133,47 +133,50 @@ function SchoolEventsPage() {
               </div>
             ) : null}
             <div className="row g-4">
-              {events.map((event) => (
-                <div key={event.id} className="col-12">
-                  <div
-                    className="w-100 text-start rounded-5 p-4"
-                    style={{ background: "#0d1a34", color: "#fff", boxShadow: "0 18px 36px rgba(2, 6, 23, 0.22)" }}
-                  >
-                    <div className="d-flex flex-column flex-lg-row justify-content-between gap-4">
-                      <div>
-                        <span className="badge rounded-pill mb-3" style={{ background: "rgba(56, 189, 248, 0.16)", color: "#bae6fd", textTransform: "capitalize" }}>
-                          {event.category}
-                        </span>
-                        <h3 className="fw-bold mb-2">{event.title}</h3>
-                        <p className="mb-3" style={{ color: "#cbd5e1", lineHeight: 1.7 }}>{event.description}</p>
-                        <div className="d-flex flex-wrap gap-4" style={{ color: "#e2e8f0", fontSize: "0.92rem" }}>
-                          <span><i className="bi bi-calendar3 me-2 text-info"></i>{new Date(event.start_time).toLocaleString()}</span>
-                          <span><i className="bi bi-geo-alt me-2 text-info"></i>{event.location}</span>
-                          <span><i className="bi bi-people me-2 text-info"></i>{event.attendee_count} attending</span>
+              {events.map((event) => {
+                const attendeeCount = Math.max(0, Number(event.attendee_count) || 0);
+                return (
+                  <div key={event.id} className="col-12">
+                    <div
+                      className="w-100 text-start rounded-5 p-4"
+                      style={{ background: "#0d1a34", color: "#fff", boxShadow: "0 18px 36px rgba(2, 6, 23, 0.22)" }}
+                    >
+                      <div className="d-flex flex-column flex-lg-row justify-content-between gap-4">
+                        <div>
+                          <span className="badge rounded-pill mb-3" style={{ background: "rgba(56, 189, 248, 0.16)", color: "#bae6fd", textTransform: "capitalize" }}>
+                            {event.category}
+                          </span>
+                          <h3 className="fw-bold mb-2">{event.title}</h3>
+                          <p className="mb-3" style={{ color: "#cbd5e1", lineHeight: 1.7 }}>{event.description}</p>
+                          <div className="d-flex flex-wrap gap-4" style={{ color: "#e2e8f0", fontSize: "0.92rem" }}>
+                            <span><i className="bi bi-calendar3 me-2 text-info"></i>{new Date(event.start_time).toLocaleString()}</span>
+                            <span><i className="bi bi-geo-alt me-2 text-info"></i>{event.location}</span>
+                            <span><i className="bi bi-people me-2 text-info"></i>{attendeeCount} attending</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="d-flex flex-column justify-content-between align-items-lg-end">
-                        <div style={{ color: "#7dd3fc" }}>{event.spots_left} spots left</div>
-                        <button
-                          type="button"
-                          onClick={() => handleBookEvent(event.id)}
-                          disabled={bookingEventId === event.id}
-                          className="btn btn-sm fw-semibold px-3 py-2 mt-2"
-                          style={{
-                            background: bookingEventId === event.id ? "rgba(56, 189, 248, 0.22)" : "#22c55e",
-                            color: "#ecfeff",
-                            border: "none",
-                            borderRadius: 999,
-                            minWidth: 134,
-                          }}
-                        >
-                          {bookingEventId === event.id ? "Booking..." : "Book Event"}
-                        </button>
+                        <div className="d-flex flex-column justify-content-between align-items-lg-end">
+                          <div style={{ color: "#7dd3fc" }}>{event.spots_left} spots left</div>
+                          <button
+                            type="button"
+                            onClick={() => handleBookEvent(event.id)}
+                            disabled={bookingEventId === event.id}
+                            className="btn btn-sm fw-semibold px-3 py-2 mt-2"
+                            style={{
+                              background: bookingEventId === event.id ? "rgba(56, 189, 248, 0.22)" : "#22c55e",
+                              color: "#ecfeff",
+                              border: "none",
+                              borderRadius: 999,
+                              minWidth: 134,
+                            }}
+                          >
+                            {bookingEventId === event.id ? "Booking..." : "Book Event"}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>

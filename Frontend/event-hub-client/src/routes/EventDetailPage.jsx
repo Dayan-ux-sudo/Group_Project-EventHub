@@ -9,6 +9,19 @@ export const Route = createFileRoute("/EventDetailPage")({
   component: EventDetailPage,
 });
 
+const normalizeAttendees = (payload) => {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (Array.isArray(payload?.results)) {
+    return payload.results;
+  }
+  if (Array.isArray(payload?.attendees)) {
+    return payload.attendees;
+  }
+  return [];
+};
+
 function EventDetailPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -32,7 +45,7 @@ function EventDetailPage() {
         eventsAPI.getAttendees(eventId),
       ]);
       setEvent(eventResponse.data);
-      setAttendees(attendeesResponse.data);
+      setAttendees(normalizeAttendees(attendeesResponse.data));
       setLoadError("");
     } catch (error) {
       setLoadError("Unable to load this event right now.");
@@ -91,6 +104,18 @@ function EventDetailPage() {
     event.latitude && event.longitude
       ? `https://www.google.com/maps?q=${event.latitude},${event.longitude}`
       : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location || "")}`;
+  const startDate = new Date(event.start_time);
+  const endDate = new Date(event.end_time);
+  const attendeesCount = attendees.length;
+  const safeAttendees = Array.isArray(attendees) ? attendees : [];
+  const remainingMilliseconds = startDate.getTime() - Date.now();
+  const remainingMinutes = Math.max(0, Math.floor(remainingMilliseconds / (1000 * 60)));
+  const remainingDays = Math.floor(remainingMinutes / (60 * 24));
+  const remainingHours = Math.floor((remainingMinutes % (60 * 24)) / 60);
+  const remainingMins = remainingMinutes % 60;
+  const eventIsLive = remainingMilliseconds <= 0;
+  const calendarMonth = startDate.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const calendarDay = startDate.toLocaleDateString("en-US", { day: "2-digit" });
 
   return (
     <div className="d-flex flex-column min-vh-100" style={{ background: "#071426", color: "#f8fafc" }}>
@@ -130,10 +155,10 @@ function EventDetailPage() {
                 <div className="row g-3">
                   <div className="col-12 col-md-6">
                     <div style={{ color: "#7dd3fc", fontSize: "0.8rem" }}>Date and time</div>
-                    <div className="fw-semibold mt-1">{new Date(event.start_time).toLocaleString()} - {new Date(event.end_time).toLocaleTimeString()}</div>
+                    <div className="fw-semibold mt-1">{startDate.toLocaleString()} - {endDate.toLocaleTimeString()}</div>
                   </div>
                   <div className="col-12 col-md-6">
-                    <div style={{ color: "#7dd3fc", fontSize: "0.8rem" }}>Location</div>
+                    <div style={{ color: "#7dd3fc", fontSize: "0.8rem" }}>Venue</div>
                     <div className="fw-semibold mt-1">{event.location || "To be announced"}</div>
                   </div>
                   <div className="col-12 col-md-6">
@@ -144,54 +169,89 @@ function EventDetailPage() {
                     <div style={{ color: "#7dd3fc", fontSize: "0.8rem" }}>School</div>
                     <div className="fw-semibold mt-1">{event.school?.name}</div>
                   </div>
+                  <div className="col-12 col-md-6">
+                    <div style={{ color: "#7dd3fc", fontSize: "0.8rem" }}>Attendees</div>
+                    <div className="fw-semibold mt-1">{attendeesCount} attending</div>
+                  </div>
                 </div>
               </div>
 
               <div className="rounded-5 p-4" style={{ background: "#0d1a34", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <div className="d-flex justify-content-between align-items-center mb-3">
                   <h3 className="fw-bold mb-0">Attendees</h3>
-                  <span style={{ color: "#cbd5e1" }}>{attendees.length} going</span>
+                  <span style={{ color: "#cbd5e1" }}>{safeAttendees.length} going</span>
                 </div>
                 <div className="d-flex flex-wrap gap-3">
-                  {attendees.map((attendee) => (
-                    <div
-                      key={`${attendee.user.id}-${attendee.created_at}`}
-                      className="d-flex align-items-center gap-3 rounded-pill px-3 py-2"
-                      style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.12)" }}
-                    >
-                      {attendee.user.avatar_url ? (
-                        <img
-                          src={attendee.user.avatar_url}
-                          alt={attendee.user.full_name || attendee.user.email}
-                          style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover" }}
-                        />
-                      ) : (
-                        <div className="d-flex align-items-center justify-content-center rounded-circle" style={{ width: 38, height: 38, background: "#2454e6", color: "#fff", fontWeight: 700 }}>
-                          {(attendee.user.full_name || attendee.user.email)[0].toUpperCase()}
+                  {safeAttendees.map((attendee, index) => {
+                    const attendeeUser = attendee?.user || {};
+                    const attendeeName = attendeeUser.full_name || attendeeUser.email || "Event attendee";
+                    const attendeeInitial = attendeeName[0]?.toUpperCase() || "E";
+
+                    return (
+                      <div
+                        key={`${attendeeUser.id || "attendee"}-${attendee.created_at || index}`}
+                        className="d-flex align-items-center gap-3 rounded-pill px-3 py-2"
+                        style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.12)" }}
+                      >
+                        {attendeeUser.avatar_url ? (
+                          <img
+                            src={attendeeUser.avatar_url}
+                            alt={attendeeName}
+                            style={{ width: 38, height: 38, borderRadius: "50%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div className="d-flex align-items-center justify-content-center rounded-circle" style={{ width: 38, height: 38, background: "#2454e6", color: "#fff", fontWeight: 700 }}>
+                            {attendeeInitial}
+                          </div>
+                        )}
+                        <div>
+                          <div className="fw-semibold">{attendeeName}</div>
+                          <div style={{ color: "#7dd3fc", fontSize: "0.78rem" }}>{attendee.status || "attending"}</div>
                         </div>
-                      )}
-                      <div>
-                        <div className="fw-semibold">{attendee.user.full_name || attendee.user.email}</div>
-                        <div style={{ color: "#7dd3fc", fontSize: "0.78rem" }}>{attendee.status}</div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
             <div className="col-12 col-lg-4">
               <div className="rounded-5 p-4 mb-4" style={{ background: "#0d1a34", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <div className="rounded-4 p-3 mb-4" style={{ background: "rgba(56, 189, 248, 0.08)", border: "1px solid rgba(56, 189, 248, 0.2)" }}>
+                  <div className="d-flex align-items-center gap-3">
+                    <div className="text-center rounded-4 overflow-hidden" style={{ width: 68, border: "1px solid rgba(255,255,255,0.25)" }}>
+                      <div style={{ background: "#38bdf8", color: "#082f49", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", padding: "4px 0" }}>
+                        {calendarMonth}
+                      </div>
+                      <div className="fw-bold" style={{ fontSize: "1.45rem", lineHeight: 1.1, padding: "8px 0 10px" }}>
+                        {calendarDay}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ color: "#7dd3fc", fontSize: "0.8rem" }}>Time remaining</div>
+                      <div className="fw-bold mt-1">
+                        {eventIsLive ? "Event is live now" : `${remainingDays}d ${remainingHours}h ${remainingMins}m`}
+                      </div>
+                      <div style={{ color: "#cbd5e1", fontSize: "0.84rem" }}>{startDate.toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <span style={{ color: "#cbd5e1" }}>Venue</span>
+                  <span style={{ color: "#7dd3fc" }}>{event.location || "TBA"}</span>
+                </div>
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <span style={{ color: "#cbd5e1" }}>Capacity</span>
                   <span style={{ color: "#7dd3fc" }}>
-                    {attendees.length}/{event.capacity === 0 ? "Unlimited" : event.capacity}
+                    {attendeesCount}/{event.capacity === 0 ? "Unlimited" : event.capacity}
                   </span>
                 </div>
                 <div className="rounded-pill mb-3" style={{ height: 8, background: "#142643" }}>
                   <div className="rounded-pill" style={{ height: "100%", width: `${capacityFill}%`, background: "linear-gradient(90deg, #38bdf8, #2454e6)" }}></div>
                 </div>
-                <div className="mb-4" style={{ color: "#dbeafe" }}>Spots left: {event.spots_left}</div>
+                <div className="mb-2" style={{ color: "#dbeafe" }}>Spots left: {event.spots_left}</div>
+                <div className="mb-4" style={{ color: "#dbeafe" }}>Attendees: {attendeesCount}</div>
                 <button
                   type="button"
                   className="btn w-100 fw-bold py-3 mb-3"

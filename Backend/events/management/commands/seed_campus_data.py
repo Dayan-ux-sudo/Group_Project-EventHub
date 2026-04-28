@@ -132,6 +132,7 @@ class Command(BaseCommand):
         )
         attendee.set_password("Student123!")
         attendee.save()
+        RSVP.objects.filter(user=attendee).update(status="cancelled")
 
         for school_index, school_data in enumerate(SCHOOLS):
             school, _ = School.objects.update_or_create(
@@ -176,7 +177,5 @@ class Command(BaseCommand):
                         "is_public": True,
                     },
                 )
-                RSVP.objects.get_or_create(user=attendee, event=event, defaults={"status": "attending"})
-
-        self.stdout.write(self.style.SUCCESS("Seeded schools, organizers, events, attendee, and superuser."))
+        self.stdout.write(self.style.SUCCESS("Seeded schools, organizers, events, and superuser."))
         self.stdout.write("Superuser login: superuser@eventhub.local / SuperAdmin123!")

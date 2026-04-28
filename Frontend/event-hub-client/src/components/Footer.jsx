@@ -21,7 +21,7 @@ function Footer() {
             </div>
             <span className="text-white fw-semibold">CampusEvents</span>
             <span className="text-secondary ms-2" style={{ fontSize: "0.82rem" }}>
-              &copy; 2024 CampusEvents. All rights reserved.
+              &copy; 2026 CampusEvents. All rights reserved.
             </span>
           </div>
 

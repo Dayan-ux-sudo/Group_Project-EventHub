@@ -12,6 +12,7 @@ from .models import User
 class UserSerializer(serializers.ModelSerializer):
     school = serializers.SerializerMethodField()
     avatar_url = serializers.SerializerMethodField()
+    remove_avatar = serializers.BooleanField(write_only=True, required=False, default=False)
 
     class Meta:
         model = User
@@ -25,6 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar_size",
             "role",
             "school",
+            "remove_avatar",
         ]
         read_only_fields = ["id", "role"]
 
@@ -44,6 +46,13 @@ class UserSerializer(serializers.ModelSerializer):
         if request:
             return request.build_absolute_uri(obj.avatar.url)
         return obj.avatar.url
+
+    def update(self, instance, validated_data):
+        remove_avatar = validated_data.pop("remove_avatar", False)
+        if remove_avatar and instance.avatar:
+            instance.avatar.delete(save=False)
+            instance.avatar = None
+        return super().update(instance, validated_data)
 
 
 class RegisterSerializer(serializers.ModelSerializer):
