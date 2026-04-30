@@ -1,7 +1,7 @@
 import React from "react";
 
 const categories = [
-  { label: "All Events", icon: "bi-grid-fill", value: "all" }, // ✅ fixed
+  { label: "All Events", icon: "bi-grid-fill", value: "all" }, 
   { label: "Workshop", icon: "bi-code-slash", value: "workshop" },
   { label: "Hackathon", icon: "bi-terminal-fill", value: "hackathon" },
   { label: "Social", icon: "bi-people-fill", value: "social" },
@@ -19,7 +19,7 @@ function CategoryFilter({ active, onChange }) {
       {categories.map((cat) => (
         <button
           key={cat.value}
-          type="button" // ✅ important fix
+          type="button" 
           aria-pressed={active === cat.value}
           className="btn d-flex align-items-center gap-2 text-nowrap rounded-pill px-4"
           style={{

@@ -1,0 +1,8 @@
+services:
+  db:
+    image: postgres:18
+    volumes: !override
+      - postgres18_data:/var/lib/postgresql
+
+volumes:
+  postgres18_data:

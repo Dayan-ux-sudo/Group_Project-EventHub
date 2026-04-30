@@ -15,6 +15,10 @@ function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const handleForgotPassword = () => {
+    navigate({ to: "/Forgotpassword" });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
@@ -78,6 +82,16 @@ function LoginPage() {
                   />
                   <button type="button" className="btn btn-outline-secondary" onClick={() => setShowPassword((value) => !value)}>
                     <i className={`bi ${showPassword ? "bi-eye-slash" : "bi-eye"}`}></i>
+                  </button>
+                </div>
+                <div className="d-flex justify-content-end mt-2">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="btn btn-link p-0 text-decoration-none fw-semibold"
+                    style={{ color: "#2454e6", fontSize: "0.9rem" }}
+                  >
+                    Forgot password?
                   </button>
                 </div>
               </div>

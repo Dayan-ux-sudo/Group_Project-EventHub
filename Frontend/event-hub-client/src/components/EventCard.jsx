@@ -26,12 +26,18 @@ const categoryBackgrounds = {
 };
 
 const titleSpecificBackgrounds = {
-  "Ward Leadership Conference":
-    "https://images.pexels.com/photos/6129159/pexels-photo-6129159.jpeg?cs=srgb&dl=pexels-rdne-6129159.jpg&fm=jpg",
   "Cybersecurity Capture Lab":
     "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&fm=jpg&q=80&w=1800",
   "CyberSecurity Capture Lab":
     "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&fm=jpg&q=80&w=1800",
+  "Surgical Innovation Grand Round":
+    "https://images.unsplash.com/photo-1727830968581-d5b47227ed1a?auto=format&fit=crop&fm=jpg&q=80&w=1800",
+  "Ward Leadership Conference":
+    "https://images.pexels.com/photos/6129436/pexels-photo-6129436.jpeg?auto=compress&cs=tinysrgb&w=1800",
+  "Molecular Discovery Showcase":
+    "https://images.pexels.com/photos/2399065/pexels-photo-2399065.jpeg?auto=compress&cs=tinysrgb&w=1800",
+  "Maternal Care Seminar":
+    "https://images.pexels.com/photos/35645507/pexels-photo-35645507.jpeg?auto=compress&cs=tinysrgb&w=1800",
 };
 
 const titleImageKeywords = {
@@ -50,7 +56,6 @@ const titleImageKeywords = {
   "Cloud Computing Hack Night": ["cloud", "server", "coding"],
   "Clinical Skills Bootcamp": ["medical", "hospital", "training"],
   "Surgical Innovation Grand Round": ["doctor", "operating", "patient", "surgery"],
-  "Surgical Innovaion Grand Round": ["doctor", "operating", "patient", "surgery"],
   "Research Ethics Colloquium": ["research", "laboratory", "science", "microscope"],
   "Community Health Screening": ["healthcare", "community", "clinic"],
   "Startup Pitch Arena": ["startup", "pitch", "business"],
@@ -125,18 +130,17 @@ const getTitleSearchImage = (title = "") => {
 };
 
 const getEventBackground = (event) => {
-  const eventTitle = typeof event?.title === "string" ? event.title.trim() : "";
-  const exactBackground = titleSpecificBackgrounds[eventTitle] || titleSpecificBackgrounds[event.title];
+  const exactBackground = titleSpecificBackgrounds[event.title];
   if (exactBackground) {
     return exactBackground;
   }
 
-  const exactTitleImage = getTitleSpecificImage(eventTitle);
+  const exactTitleImage = getTitleSpecificImage(event.title);
   if (exactTitleImage) {
     return exactTitleImage;
   }
 
-  const titleQueried = getTitleSearchImage(eventTitle);
+  const titleQueried = getTitleSearchImage(event.title);
   if (titleQueried) {
     return titleQueried;
   }
